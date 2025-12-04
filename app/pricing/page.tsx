@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Check, Zap, Users, Building2, Loader2 } from 'lucide-react'
 
-// Subscription plans matching lib/duitku.ts
+// Subscription plans matching lib/faspay.ts
 const PLANS = [
   {
     id: 'starter',
@@ -119,7 +119,7 @@ export default function PricingPage() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
       
-      const response = await fetch('/api/duitku/checkout', {
+      const response = await fetch('/api/faspay/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,14 +146,18 @@ export default function PricingPage() {
         throw new Error(result.error || 'Checkout failed')
       }
 
-      if (!result.data?.paymentUrl) {
-        throw new Error('Payment URL not found in response')
+      if (!result.data?.redirectUrl && !result.data?.virtualAccountNo) {
+        throw new Error('Payment information not found in response')
       }
 
-      console.log('🔗 Redirecting to:', result.data.paymentUrl)
-      
-      // Redirect to Duitku payment page
-      window.location.href = result.data.paymentUrl
+      // Faspay can return redirectUrl or just VA number
+      if (result.data.redirectUrl) {
+        console.log('🔗 Redirecting to:', result.data.redirectUrl)
+        window.location.href = result.data.redirectUrl
+      } else {
+        // If only VA number is returned, show it to user
+        alert(`VA Number: ${result.data.virtualAccountNo}\nSilakan transfer ke nomor VA ini untuk melanjutkan.`)
+      }
 
     } catch (error) {
       console.error('❌ Checkout error:', error)
@@ -361,9 +365,9 @@ export default function PricingPage() {
 
               <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  🔒 Pembayaran aman melalui <strong>Duitku</strong>
+                  🔒 Pembayaran aman melalui <strong>Faspay</strong>
                   <br />
-                  💳 Mendukung: Transfer Bank, E-Wallet, Kartu Kredit
+                  💳 Mendukung: Virtual Account, Transfer Bank, E-Wallet, Kartu Kredit
                   <br />
                   ✅ 14-day money-back guarantee
                 </p>
@@ -384,9 +388,9 @@ export default function PricingPage() {
                 Bagaimana cara pembayaran?
               </h3>
               <p className="text-gray-700">
-                Kami menggunakan <strong>Duitku</strong> sebagai payment gateway. 
-                Anda bisa bayar via Transfer Bank (BCA, Mandiri, BNI, BRI), 
-                E-Wallet (GoPay, OVO, DANA), Kartu Kredit, atau QRIS.
+                Kami menggunakan <strong>Faspay</strong> sebagai payment gateway. 
+                Anda bisa bayar via Virtual Account (Permata, Mandiri, BNI, BRI), 
+                Transfer Bank, E-Wallet, Kartu Kredit, atau Retail Payment.
               </p>
             </div>
 

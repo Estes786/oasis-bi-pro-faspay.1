@@ -10,7 +10,7 @@ export interface SubscriptionUpdateData {
   planId: string
   merchantOrderId: string
   amount: number
-  duitkuReference: string
+  faspayReference: string
   status: 'active' | 'pending' | 'expired' | 'cancelled'
 }
 
@@ -58,8 +58,8 @@ export async function updateSubscriptionAfterPayment(data: SubscriptionUpdateDat
           status: data.status,
           current_period_start: periodStart.toISOString(),
           current_period_end: periodEnd.toISOString(),
-          payment_gateway: 'duitku',
-          gateway_subscription_id: data.duitkuReference,
+          payment_gateway: 'faspay',
+          gateway_subscription_id: data.faspayReference,
           updated_at: now.toISOString(),
         })
         .eq('id', existingSubscription.id)
@@ -80,8 +80,8 @@ export async function updateSubscriptionAfterPayment(data: SubscriptionUpdateDat
           status: data.status,
           current_period_start: periodStart.toISOString(),
           current_period_end: periodEnd.toISOString(),
-          payment_gateway: 'duitku',
-          gateway_subscription_id: data.duitkuReference,
+          payment_gateway: 'faspay',
+          gateway_subscription_id: data.faspayReference,
         })
       
       if (insertError) {
@@ -117,9 +117,9 @@ export async function updateSubscriptionAfterPayment(data: SubscriptionUpdateDat
         amount: data.amount,
         currency: 'IDR',
         status: data.status === 'active' ? 'completed' : data.status,
-        payment_method: 'duitku',
-        payment_gateway: 'duitku',
-        gateway_reference: data.duitkuReference,
+        payment_method: 'faspay',
+        payment_gateway: 'faspay',
+        gateway_reference: data.faspayReference,
         metadata: {
           merchant_order_id: data.merchantOrderId,
           plan_id: data.planId,
@@ -165,8 +165,8 @@ export async function createPendingTransaction(data: {
         amount: data.amount,
         currency: 'IDR',
         status: 'pending',
-        payment_method: 'duitku',
-        payment_gateway: 'duitku',
+        payment_method: 'faspay',
+        payment_gateway: 'faspay',
         gateway_reference: data.merchantOrderId,
         metadata: {
           merchant_order_id: data.merchantOrderId,

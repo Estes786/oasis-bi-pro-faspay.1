@@ -1,19 +1,21 @@
 /**
- * DUITKU CHECKOUT API ROUTE
- * POST /api/duitku/checkout
+ * FASPAY SNAP CHECKOUT API ROUTE
+ * POST /api/faspay/checkout
  * 
- * Purpose: Create payment request to Duitku for SUBSCRIPTION BILLING ONLY
+ * Purpose: Create VA Dynamic payment request to Faspay for SUBSCRIPTION BILLING ONLY
  * This is NOT for processing third-party payments
  * We are collecting OUR subscription fees from OUR customers
+ * 
+ * SNAP: Standar Nasional Open API Pembayaran (Bank Indonesia)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { 
-  createDuitkuPayment, 
+  createFaspayVADynamic, 
   generateMerchantOrderId,
   SUBSCRIPTION_PLANS,
-  type DuitkuPaymentRequest 
-} from '@/lib/duitku'
+  type FaspayPaymentRequest 
+} from '@/lib/faspay'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
     const { planId, email, phoneNumber, customerName, userId } = body
     
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🛒 CHECKOUT REQUEST RECEIVED')
+    console.log('🛒 FASPAY CHECKOUT REQUEST RECEIVED')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log('📦 Request data:', { planId, email, phoneNumber, customerName, userId })
     
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     console.log('🔑 Generated Order ID:', merchantOrderId)
     
     // Create payment request
-    const paymentRequest: DuitkuPaymentRequest = {
+    const paymentRequest: FaspayPaymentRequest = {
       merchantOrderId,
       paymentAmount: plan.price,
       productDetails: `${plan.name} - OASIS BI PRO Subscription`,
@@ -67,13 +69,13 @@ export async function POST(request: NextRequest) {
       userId: userId || undefined,
     }
 
-    console.log('📤 Calling Duitku API...')
+    console.log('📤 Calling Faspay SNAP API...')
     
-    // Call Duitku API
-    const result = await createDuitkuPayment(paymentRequest)
+    // Call Faspay SNAP API
+    const result = await createFaspayVADynamic(paymentRequest)
     
     if (!result.success) {
-      console.error('❌ Duitku API call failed:', result.error)
+      console.error('❌ Faspay API call failed:', result.error)
       return NextResponse.json(
         { 
           success: false, 
@@ -83,14 +85,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('✅ Payment URL generated:', result.paymentUrl)
-    console.log('✅ Duitku Reference:', result.reference)
+    console.log('✅ VA Number generated:', result.virtualAccountNo)
+    console.log('✅ Redirect URL:', result.redirectUrl)
+    console.log('✅ Faspay Reference:', result.reference)
     
     // Create pending transaction in database (if userId provided)
     if (userId) {
       try {
         console.log('🔄 Attempting to create pending transaction...')
-        console.log('🔍 Checking Supabase connection...')
         
         // Verify Supabase environment variables
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -122,23 +124,24 @@ export async function POST(request: NextRequest) {
         console.error('   Impact: Payment will proceed, but transaction not logged')
         console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
         // Don't fail the checkout - just log the error
-        // Payment URL is already generated, so customer can proceed
       }
     }
     
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('✅ CHECKOUT COMPLETED SUCCESSFULLY')
+    console.log('✅ FASPAY CHECKOUT COMPLETED SUCCESSFULLY')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
-    // Return payment URL and reference
+    // Return VA info and redirect URL
     return NextResponse.json({
       success: true,
       data: {
-        paymentUrl: result.paymentUrl,
+        virtualAccountNo: result.virtualAccountNo,
+        redirectUrl: result.redirectUrl,
         reference: result.reference,
         merchantOrderId,
         amount: plan.price,
         planName: plan.name,
+        expiryDate: result.expiryDate,
       }
     })
 
