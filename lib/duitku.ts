@@ -9,10 +9,10 @@
 
 import crypto from 'crypto'
 
-// Duitku Configuration
+// Duitku Configuration (UPDATED WITH NEW CREDENTIALS - DS26557)
 export const DUITKU_CONFIG = {
-  merchantCode: process.env.NEXT_PUBLIC_DUITKU_MERCHANT_CODE || 'DS26335',
-  apiKey: process.env.DUITKU_API_KEY || '78cb96d8cb9ea9dc40d1c77068a659f6',
+  merchantCode: process.env.NEXT_PUBLIC_DUITKU_MERCHANT_CODE || 'DS26557',
+  apiKey: process.env.DUITKU_API_KEY || '68e1d64813c7f21a1ffc3839064ab6b3',
   environment: process.env.NEXT_PUBLIC_DUITKU_ENV || 'sandbox',
   baseUrl: process.env.NEXT_PUBLIC_DUITKU_API_URL || 'https://api-sandbox.duitku.com/api/merchant',
   returnUrl: process.env.NEXT_PUBLIC_DUITKU_RETURN_URL || 'https://www.oasis-bi-pro.web.id/payment/success',
