@@ -10,11 +10,7 @@ module.exports = {
       },
       watch: false,
       instances: 1,
-      exec_mode: 'fork',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss',
-      error_file: './logs/pm2-error.log',
-      out_file: './logs/pm2-out.log',
-      combine_logs: true
+      exec_mode: 'fork'
     }
   ]
 }
