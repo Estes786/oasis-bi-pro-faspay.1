@@ -13,18 +13,21 @@ import crypto from 'crypto'
 
 // Faspay SNAP Configuration
 export const FASPAY_CONFIG = {
-  merchantId: process.env.FASPAY_MERCHANT_ID || 'oasisbi',
-  password: process.env.FASPAY_PASSWORD || '@Daqukemang4',
-  partnerId: process.env.FASPAY_PARTNER_ID || 'oasisbi',
+  merchantId: process.env.FASPAY_MERCHANT_ID || '36619',
+  password: process.env.FASPAY_PASSWORD_KEY || 'p@ssw0rd',
+  userId: process.env.FASPAY_USER_ID || 'bot36619',
+  partnerId: process.env.FASPAY_PARTNER_ID || '36619',
   channelId: process.env.FASPAY_CHANNEL_ID || '77001',
   environment: process.env.FASPAY_ENV || 'sandbox',
-  baseUrl: process.env.FASPAY_BASE_URL || 'https://debit-sandbox.faspay.co.id',
+  baseUrl: process.env.FASPAY_BASE_URL || 'https://debit-sandbox.faspay.co.id/api',
   // Private key untuk signature generation (RSA)
   // CRITICAL: Ini harus di-generate merchant dan di-share public key ke Faspay
   // For now, kita akan generate dummy key untuk testing
   privateKey: process.env.FASPAY_PRIVATE_KEY || '',
   // Public key dari Faspay untuk verify callback signature
   publicKeyFaspay: process.env.FASPAY_PUBLIC_KEY_FASPAY || '',
+  // Callback URL untuk notifikasi pembayaran
+  callbackUrl: process.env.FASPAY_CALLBACK_URL || 'https://oasis-bi-pro-faspay-1.vercel.app/api/faspay/callback',
 }
 
 // Subscription Plans (matching pricing page)

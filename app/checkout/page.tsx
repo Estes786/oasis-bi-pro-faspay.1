@@ -40,15 +40,17 @@ function CheckoutContent() {
     setPaymentMethods([
       {
         paymentMethod: 'va',
-        paymentName: 'Virtual Account',
+        paymentName: 'Virtual Account Permata',
         paymentImage: '/payment-icons/va.png',
-        totalFee: 0,
+        paymentFee: 0,
+        totalFee: plan.price,
       },
       {
         paymentMethod: 'qris',
-        paymentName: 'QRIS / E-Wallet',
+        paymentName: 'QRIS / E-Wallet (GoPay, OVO, Dana, dll)',
         paymentImage: '/payment-icons/qris.png',
-        totalFee: 0,
+        paymentFee: 0,
+        totalFee: plan.price,
       }
     ]);
   };
@@ -311,56 +313,37 @@ function CheckoutContent() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Group payment methods by type */}
-                  {['Virtual Account', 'E-Wallet', 'Credit Card', 'QRIS'].map((group) => {
-                    const methods = paymentMethods.filter((method) => {
-                      if (group === 'Virtual Account') return method.paymentMethod.includes('V');
-                      if (group === 'E-Wallet') return ['OV', 'DA', 'SP', 'LF'].includes(method.paymentMethod);
-                      if (group === 'Credit Card') return method.paymentMethod === 'CC';
-                      if (group === 'QRIS') return method.paymentMethod === 'NQ';
-                      return false;
-                    });
-
-                    if (methods.length === 0) return null;
-
-                    return (
-                      <div key={group}>
-                        <h3 className="font-semibold text-lg mb-3 flex items-center">
-                          {group === 'Virtual Account' && <Building2 className="w-5 h-5 mr-2" />}
-                          {group === 'E-Wallet' && <Wallet className="w-5 h-5 mr-2" />}
-                          {group === 'Credit Card' && <CreditCard className="w-5 h-5 mr-2" />}
-                          {group === 'QRIS' && <QrCode className="w-5 h-5 mr-2" />}
-                          {group}
-                        </h3>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          {methods.map((method) => (
-                            <div
-                              key={method.paymentMethod}
-                              onClick={() => setSelectedPaymentMethod(method.paymentMethod)}
-                              className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                                selectedPaymentMethod === method.paymentMethod
-                                  ? 'border-primary-600 bg-primary-50'
-                                  : 'border-gray-200 hover:border-primary-300'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-semibold">{method.paymentName}</p>
-                                  <p className="text-sm text-gray-600">
-                                    {method.paymentFee > 0 && `Biaya: Rp ${method.paymentFee.toLocaleString('id-ID')}`}
-                                    {method.paymentFee === 0 && 'Gratis'}
-                                  </p>
-                                </div>
-                                {selectedPaymentMethod === method.paymentMethod && (
-                                  <Check className="w-6 h-6 text-primary-600" />
-                                )}
-                              </div>
+                  {/* Display all payment methods */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {paymentMethods.map((method) => (
+                      <div
+                        key={method.paymentMethod}
+                        onClick={() => setSelectedPaymentMethod(method.paymentMethod)}
+                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                          selectedPaymentMethod === method.paymentMethod
+                            ? 'border-primary-600 bg-primary-50'
+                            : 'border-gray-200 hover:border-primary-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center mb-1">
+                              {method.paymentMethod === 'va' && <Building2 className="w-5 h-5 mr-2 text-primary-600" />}
+                              {method.paymentMethod === 'qris' && <QrCode className="w-5 h-5 mr-2 text-primary-600" />}
+                              <p className="font-semibold">{method.paymentName}</p>
                             </div>
-                          ))}
+                            <p className="text-sm text-gray-600">
+                              {method.paymentFee > 0 && `Biaya: Rp ${method.paymentFee.toLocaleString('id-ID')}`}
+                              {method.paymentFee === 0 && 'Tanpa biaya admin'}
+                            </p>
+                          </div>
+                          {selectedPaymentMethod === method.paymentMethod && (
+                            <Check className="w-6 h-6 text-primary-600" />
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -441,7 +424,8 @@ function CheckoutContent() {
 
         {/* Security Badge */}
         <div className="mt-8 text-center text-sm text-gray-600">
-          <p>🔒 Pembayaran aman dan terenkripsi dengan Duitku</p>
+          <p>🔒 Pembayaran aman dan terenkripsi dengan Faspay</p>
+          <p className="text-xs mt-1">Powered by SNAP (Standar Nasional Open API Pembayaran - Bank Indonesia)</p>
         </div>
       </div>
     </div>
