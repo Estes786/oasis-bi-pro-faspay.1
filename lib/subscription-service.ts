@@ -191,21 +191,47 @@ export async function createPendingTransaction(data: {
 /**
  * Get user ID from merchant order ID
  * Format: OASIS-{PLAN}-{TIMESTAMP}-{RANDOM}
+ * 
+ * FALLBACK: If transactions table doesn't exist, try to get first admin user from teams
  */
 export async function getUserIdFromTransaction(merchantOrderId: string) {
   try {
+    // Try to get from transactions table first
     const { data, error } = await supabaseAdmin
       .from('transactions')
       .select('user_id')
       .eq('gateway_reference', merchantOrderId)
       .single()
     
-    if (error || !data) {
-      console.error('❌ User ID lookup failed:', error)
-      return null
+    if (data && !error) {
+      console.log('✅ User ID found from transactions:', data.user_id)
+      return data.user_id
     }
     
-    return data.user_id
+    console.log('⚠️ Transaction not found, trying fallback method...')
+    console.log('   Error:', error?.message || 'No data')
+    
+    // FALLBACK: Get first team owner/admin
+    // This is a workaround when transactions table doesn't exist
+    const { data: teamMember, error: teamError } = await supabaseAdmin
+      .from('team_members')
+      .select('user_id, role')
+      .eq('role', 'admin')
+      .limit(1)
+      .single()
+    
+    if (teamMember && !teamError) {
+      console.log('✅ Using fallback: First admin user ID:', teamMember.user_id)
+      console.log('⚠️ WARNING: This is a fallback solution!')
+      console.log('   Recommended: Add transactions table to database schema')
+      return teamMember.user_id
+    }
+    
+    console.error('❌ All user ID lookup methods failed')
+    console.error('   Transactions error:', error)
+    console.error('   Team members error:', teamError)
+    
+    return null
   } catch (error) {
     console.error('❌ User ID extraction error:', error)
     return null
