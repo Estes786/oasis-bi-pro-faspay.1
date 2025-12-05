@@ -28,6 +28,8 @@ export const FASPAY_CONFIG = {
   publicKeyFaspay: process.env.FASPAY_PUBLIC_KEY_FASPAY || '',
   // Callback URL untuk notifikasi pembayaran
   callbackUrl: process.env.FASPAY_CALLBACK_URL || 'https://oasis-bi-pro-faspay-1.vercel.app/api/faspay/callback',
+  // SIMULATION MODE: Set to true if sandbox credentials invalid
+  simulationMode: process.env.FASPAY_SIMULATION_MODE === 'true',
 }
 
 // Subscription Plans (matching pricing page)
@@ -249,84 +251,154 @@ export interface FaspayPaymentRequest {
   userId?: string
 }
 
+/**
+ * Create Faspay VA using Legacy Debit API
+ * Legacy API documentation: https://docs.faspay.co.id/merchant-integration/debit/
+ * 
+ * NOTE: Faspay Sandbox hanya mendukung Legacy Debit API, bukan SNAP
+ * CRITICAL: Sandbox credentials (36619/p@ssw0rd) TIDAK MEMILIKI AKSES ke API
+ * 
+ * SIMULATION MODE: Jika simulationMode=true, return mock response
+ */
 export async function createFaspayVADynamic(data: FaspayPaymentRequest) {
-  const { merchantId, partnerId, channelId, baseUrl } = FASPAY_CONFIG
+  const { merchantId, password, userId, baseUrl, simulationMode } = FASPAY_CONFIG
   
   try {
-    // Generate timestamp in ISO 8601 format
-    const timestamp = new Date().toISOString()
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log(simulationMode ? '🎭 FASPAY SIMULATION MODE' : '📤 FASPAY LEGACY DEBIT API - CREATE VA')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     
-    // Generate unique external ID (daily unique)
-    const externalId = generateExternalId()
+    // Format expired date (YYYY-MM-DD HH:MM:SS)
+    const expiredDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const formattedExpiry = expiredDate.toISOString().replace('T', ' ').substring(0, 19)
     
-    // Prepare request body
-    const requestBody = {
-      virtualAccountName: data.customerName,
-      virtualAccountEmail: data.email,
-      virtualAccountPhone: data.phoneNumber,
-      trxId: data.merchantOrderId,
-      totalAmount: {
-        value: data.paymentAmount.toFixed(2),
-        currency: 'IDR'
-      },
-      expiredDate: getExpiredDate(),
-      additionalInfo: {
-        billDate: timestamp,
-        channelCode: '402', // Permata VA Dynamic
-        billDescription: data.productDetails
+    console.log('📋 Request Data:')
+    console.log('   Bill No:', data.merchantOrderId)
+    console.log('   Amount:', data.paymentAmount)
+    console.log('   Customer:', data.customerName)
+    console.log('   Expired:', formattedExpiry)
+    
+    // SIMULATION MODE: Return mock response
+    if (simulationMode) {
+      console.log('🎭 SIMULATION MODE ACTIVE')
+      console.log('   ⚠️  This is NOT a real transaction')
+      console.log('   ℹ️  Faspay sandbox credentials (36619/p@ssw0rd) are invalid')
+      console.log('   ℹ️  Returning mock VA number for demonstration')
+      
+      // Generate mock VA number
+      const mockVANumber = '8770' + data.merchantOrderId.substring(data.merchantOrderId.length - 12)
+      const mockTrxId = 'TRX-MOCK-' + Date.now()
+      
+      // Create mock redirect URL (in production, this would be Faspay's payment page)
+      const mockRedirectUrl = `https://debit-sandbox.faspay.co.id/payment/mock/${mockVANumber}`
+      
+      console.log('✅ Mock VA Number:', mockVANumber)
+      console.log('✅ Mock Redirect URL:', mockRedirectUrl)
+      console.log('✅ Mock Transaction ID:', mockTrxId)
+      console.log('')
+      console.log('📝 NOTE FOR PRODUCTION:')
+      console.log('   1. Register for REAL Faspay merchant account at https://faspay.co.id')
+      console.log('   2. Get production credentials (merchant_id, password, user_id)')
+      console.log('   3. Update FASPAY_SIMULATION_MODE=false in .env.local')
+      console.log('   4. Test with real production credentials')
+      
+      return {
+        success: true,
+        data: {
+          response_code: '00',
+          response_desc: 'Success (Simulation)',
+          bill_no: mockVANumber,
+          redirect_url: mockRedirectUrl,
+          trx_id: mockTrxId,
+          simulation: true,
+        },
+        virtualAccountNo: mockVANumber,
+        redirectUrl: mockRedirectUrl,
+        reference: mockTrxId,
+        expiryDate: formattedExpiry,
       }
     }
     
-    // Generate SNAP signature
-    const endpoint = '/v1.0/transfer-va/create-va'
-    const signature = generateSnapSignature('POST', endpoint, requestBody, timestamp)
+    // REAL MODE: Call Faspay API
+    // Generate signature for Legacy Debit API
+    // Formula: SHA1(MD5(merchantId + password + bill_no))
+    const signatureString = `${merchantId}${password}${data.merchantOrderId}`
+    const md5Hash = crypto.createHash('md5').update(signatureString).digest('hex')
+    const signature = crypto.createHash('sha1').update(md5Hash).digest('hex')
     
-    // Prepare headers
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-TIMESTAMP': timestamp,
-      'X-SIGNATURE': signature,
-      'ORIGIN': 'www.oasis-bi-pro.web.id',
-      'X-PARTNER-ID': partnerId,
-      'X-EXTERNAL-ID': externalId,
-      'CHANNEL-ID': channelId
+    // Prepare request body for Legacy Debit API
+    const requestBody = {
+      request: 'Informasi Tagihan',
+      merchant_id: merchantId,
+      merchant: merchantId,
+      bill_no: data.merchantOrderId,
+      bill_reff: data.merchantOrderId,
+      bill_date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      bill_expired: formattedExpiry,
+      bill_desc: data.productDetails,
+      bill_currency: 'IDR',
+      bill_gross: data.paymentAmount,
+      bill_miscfee: 0,
+      bill_total: data.paymentAmount,
+      cust_no: data.phoneNumber,
+      cust_name: data.customerName,
+      payment_channel: '402', // Permata VA
+      pay_type: '1', // 1 = Closed Payment (Fixed amount)
+      bank_userid: userId,
+      signature: signature,
     }
     
-    console.log('📤 Faspay SNAP Create VA Request:')
-    console.log('   URL:', `${baseUrl}${endpoint}`)
-    console.log('   Headers:', headers)
-    console.log('   Body:', requestBody)
+    console.log('   Signature:', signature.substring(0, 20) + '...')
     
-    const response = await fetch(`${baseUrl}${endpoint}`, {
+    // Endpoint untuk Legacy Debit API
+    const endpoint = '/cvr/300011/10'
+    const url = `${baseUrl}${endpoint}`
+    
+    console.log('📤 Sending request to:', url)
+    
+    const response = await fetch(url, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(requestBody),
     })
     
-    const result = await response.json()
+    console.log('📥 Response Status:', response.status)
     
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text()
+      console.error('❌ Response is not JSON:', text.substring(0, 200))
+      console.error('')
+      console.error('⚠️  FASPAY SANDBOX CREDENTIALS ARE INVALID')
+      console.error('   The provided credentials (36619/p@ssw0rd) do not have API access')
+      console.error('   Please use real merchant credentials or enable SIMULATION_MODE')
+      throw new Error('Faspay API credentials invalid - enable SIMULATION_MODE or use real credentials')
+    }
+    
+    const result = await response.json()
     console.log('📥 Faspay Response:', result)
     
-    if (!response.ok) {
-      throw new Error(`Faspay API Error (${response.status}): ${result.responseMessage || result.message || 'Unknown error'}`)
-    }
-    
     // Check response code
-    if (result.responseCode !== '2002500') {
-      throw new Error(`Faspay VA Creation Failed: ${result.responseMessage} (${result.responseCode})`)
+    // response_code: '00' = Success
+    // response_code: '01' = Failed
+    if (result.response_code === '01' || !result.redirect_url) {
+      throw new Error(`Faspay VA Creation Failed: ${result.response_desc || 'Unknown error'}`)
     }
     
-    // Extract important data
-    const vaData = result.virtualAccountData
-    const redirectUrl = vaData.additionalInfo?.redirectUrl
+    console.log('✅ VA Number:', result.bill_no)
+    console.log('✅ Redirect URL:', result.redirect_url)
+    console.log('✅ Faspay Transaction ID:', result.trx_id)
     
     return {
       success: true,
       data: result,
-      virtualAccountNo: vaData.virtualAccountNo,
-      redirectUrl,
-      reference: vaData.trxId,
-      expiryDate: vaData.expiredDate,
+      virtualAccountNo: result.bill_no,
+      redirectUrl: result.redirect_url,
+      reference: result.trx_id,
+      expiryDate: formattedExpiry,
     }
     
   } catch (error) {

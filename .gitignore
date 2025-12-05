@@ -49,3 +49,5 @@ _backup/
 *.tar.gz
 *.zip
 enhancement-package.tar.gz
+.env.local
+.env
