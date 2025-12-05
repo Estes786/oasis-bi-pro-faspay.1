@@ -1,0 +1,59 @@
+{
+  "timestamp": "2025-12-05T17:43:33.533Z",
+  "supabaseUrl": "https://ifvusvcmcxytwcokbzje.supabase.co",
+  "tests": {
+    "tablesExist": {
+      "success": true,
+      "results": [
+        {
+          "table": "user_profiles",
+          "exists": true
+        },
+        {
+          "table": "teams",
+          "exists": true
+        },
+        {
+          "table": "team_members",
+          "exists": true
+        },
+        {
+          "table": "subscriptions",
+          "exists": true
+        },
+        {
+          "table": "transactions",
+          "exists": true
+        },
+        {
+          "table": "data_integrations",
+          "exists": true
+        },
+        {
+          "table": "analytics_data",
+          "exists": true
+        },
+        {
+          "table": "reports",
+          "exists": true
+        },
+        {
+          "table": "ai_insights",
+          "exists": true
+        }
+      ]
+    },
+    "transactionsStructure": {
+      "success": true,
+      "foreignKeysWork": true
+    },
+    "indexPerformance": {
+      "success": true,
+      "queryTime": 315
+    },
+    "fallbackMechanism": {
+      "success": true,
+      "hasAdmins": false
+    }
+  }
+}
